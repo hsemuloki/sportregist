@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Display Players and Scores</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('running4.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: white;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid white;
+        }
+
+        th {
+            background-color: gray;
+        }
+
+        tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        tr:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .refresh-btn {
+            display: block;
+            margin: 20px auto;
+            padding: 10px;
+            font-size: 1rem;
+            background-color: black;
+            color: white;
+            border: 1px solid white;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            transition: 0.3s;
+        }
+
+        .refresh-btn:hover {
+            background-color: white;
+            color: black;
+        }
+
+        #dateTimeContainer, #winnerContainer {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 5px;
+        }
+
+        #dateTimeContainer h2, #winnerContainer h2 {
+            font-size: 1.5rem;
+        }
+
+        #dateTimeContainer p, #winnerContainer p {
+            font-size: 1rem;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Players and Scores</h1>
+   
+    <table>
+        <thead>
+            <tr>
+                <th>Player 1</th>
+                <th>Class 1</th>
+                <th>Roll No 1</th>
+                <th>Score 1</th>
+                <th>Player 2</th>
+                <th>Class 2</th>
+                <th>Roll No 2</th>
+                <th>Score 2</th>
+            </tr>
+        </thead>
+        <tbody id="displayList"></tbody>
+    </table>
+    <button class="refresh-btn" onclick="refreshPage()">Refresh</button>
+
+    <div id="dateTimeContainer">
+        <h2>Date and Time</h2>
+        <p id="dateTimeDisplay">Loading...</p>
+    </div>
+    <div id="winnerContainer">
+        <h2>Winner</h2>
+        <p id="winnerDisplay">Loading winner...</p>
+    </div>
+    
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+      apiKey: "AIzaSyCQE7-Dn0uqxAv_Kj1AnmuVhaiVfYDD6pc",
+      authDomain: "sports-day-cf7e1.firebaseapp.com",
+      projectId: "sports-day-cf7e1",
+      storageBucket: "sports-day-cf7e1.appspot.com",
+      messagingSenderId: "1061567074079",
+      appId: "1:1061567074079:web:cbcb573f732702db822a2a"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  async function displayPlayers() {
+      const displayList = document.getElementById('displayList');
+      displayList.innerHTML = '';
+
+      try {
+          const querySnapshot = await getDocs(collection(db, "run"));
+          const players = [];
+
+          querySnapshot.forEach(doc => {
+              players.push(doc.data());
+          });
+
+          for (let i = 0; i < players.length; i += 2) {
+              const row = document.createElement('tr');
+
+              row.innerHTML = `
+                  <td>${players[i]?.name || ''}</td>
+                  <td>${players[i]?.userClass || ''}</td>
+                  <td>${players[i]?.rollNo || ''}</td>
+                  <td>${players[i]?.score || ''}</td>
+                  <td>${players[i + 1]?.name || ''}</td>
+                  <td>${players[i + 1]?.userClass || ''}</td>
+                  <td>${players[i + 1]?.rollNo || ''}</td>
+                  <td>${players[i + 1]?.score || ''}</td>
+              `;
+
+              displayList.appendChild(row);
+          }
+      } catch (error) {
+          console.error("Error fetching players:", error);
+      }
+  }
+
+  async function displayDateTime() {
+      const dateTimeDisplay = document.getElementById('dateTimeDisplay');
+
+      try {
+          const querySnapshot = await getDocs(collection(db, "eventDetails"));
+          if (!querySnapshot.empty) {
+              const docSnap = querySnapshot.docs[0];
+              const data = docSnap.data();
+              dateTimeDisplay.textContent = new Date(data.dateTime).toLocaleString();
+          } else {
+              dateTimeDisplay.textContent = "No date and time saved.";
+          }
+      } catch (error) {
+          console.error("Error fetching date and time:", error);
+      }
+  }
+
+  async function displayWinner() {
+      const winnerDisplay = document.getElementById('winnerDisplay');
+
+      try {
+          const querySnapshot = await getDocs(collection(db, "eventDetails"));
+          if (!querySnapshot.empty) {
+              const docSnap = querySnapshot.docs[0];
+              const data = docSnap.data();
+              winnerDisplay.textContent = `Winner: ${data.winner}`;
+          } else {
+              winnerDisplay.textContent = "No winner has been set.";
+          }
+      } catch (error) {
+          console.error("Error fetching winner:", error);
+      }
+  }
+
+  function refreshPage() {
+      displayPlayers();
+      displayDateTime();
+      displayWinner();
+  }
+
+  window.onload = function() {
+      displayPlayers();
+      displayDateTime();
+      displayWinner();
+  };
+</script>
+</body>
+</html>

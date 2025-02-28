@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Display Players and Scores</title>
+    <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-firestore.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: url('boxcricket4.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+            padding: 20px;
+        }
+        h1 { text-align: center; margin-bottom: 20px; font-size: 2rem; }
+        table {
+            width: 100%; border-collapse: collapse; margin-bottom: 20px; background-color: rgba(0, 0, 0, 0.7);
+        }
+        th, td {
+            padding: 12px; text-align: left; border: 1px solid white; font-size: 1rem;
+        }
+        th { background-color: #444; color: white; text-transform: uppercase; }
+        tr:nth-child(even) { background-color: #333; }
+        tr:hover { background-color: #555; }
+        button.refresh-btn {
+            display: block; width: 150px; margin: 20px auto; padding: 10px;
+            background: black; color: white; border: 1px solid white; border-radius: 4px;
+            cursor: pointer; transition: 0.3s;
+        }
+        button.refresh-btn:hover { background: white; color: black; }
+        #dateTimeContainer, #winnerContainer {
+            margin-bottom: 20px; padding: 20px; background-color: rgba(0, 0, 0, 0.7); border-radius: 4px;
+        }
+        h2 { font-size: 1.5rem; margin-bottom: 10px; color: white; }
+    </style>
+</head>
+<body>
+
+    <h1>Teams and Scores</h1>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Team</th>
+                <th>Players</th>
+                <th>Runs</th>
+                <th>Wickets</th>
+                <th>Overs</th>
+            </tr>
+        </thead>
+        <tbody id="displayList"></tbody>
+    </table>
+
+    <button class="refresh-btn" onclick="loadTeams()">Refresh</button>
+
+    <div id="dateTimeContainer">
+        <h2>Date and Time</h2>
+        <p id="dateTimeDisplay">Loading...</p>
+    </div>
+    
+    <div id="winnerContainer">
+        <h2>Winner</h2>
+        <p id="winnerDisplay">Loading winner...</p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-firestore.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCQE7-Dn0uqxAv_Kj1AnmuVhaiVfYDD6pc",
+            authDomain: "sports-day-cf7e1.firebaseapp.com",
+            projectId: "sports-day-cf7e1",
+            storageBucket: "sports-day-cf7e1.appspot.com",
+            messagingSenderId: "1061567074079",
+            appId: "1:1061567074079:web:1db9c387300566eb822a2a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Function to fetch teams from Firestore
+        async function loadTeams() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "players1"));
+                const displayList = document.getElementById("displayList");
+                displayList.innerHTML = "";
+
+                querySnapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const row = document.createElement("tr");
+
+                    row.innerHTML = `
+                        <td>${data.teamName}</td>
+                        <td>${data.playerRoll}</td>
+                        <td>${data.runs}</td>
+                        <td>${data.wickets}</td>
+                        <td>${data.overs}</td>
+                    `;
+
+                    displayList.appendChild(row);
+                });
+
+            } catch (error) {
+                console.error("Error loading teams:", error);
+            }
+        }
+
+        // Function to fetch date & time from Firestore
+        async function loadDateTime() {
+            try {
+                const docRef = doc(db, "matchDetails", "dateTime2");
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    document.getElementById("dateTimeDisplay").textContent = new Date(docSnap.data().timestamp).toLocaleString();
+                } else {
+                    document.getElementById("dateTimeDisplay").textContent = "No date and time found.";
+                }
+            } catch (error) {
+                console.error("Error loading date and time:", error);
+            }
+        }
+
+        // Function to fetch the winner from Firestore
+        async function loadWinner() {
+            try {
+                const docRef = doc(db, "matchDetails", "winner2");
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    document.getElementById("winnerDisplay").textContent = `Winner: ${docSnap.data().team}`;
+                } else {
+                    document.getElementById("winnerDisplay").textContent = "No winner declared.";
+                }
+            } catch (error) {
+                console.error("Error loading winner:", error);
+            }
+        }
+
+        // Load all data on page load
+        window.onload = function() {
+            loadTeams();
+            loadDateTime();
+            loadWinner();
+        };
+    </script>
+
+</body>
+</html>
